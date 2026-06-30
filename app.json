@@ -1,16 +1,11 @@
 {
   "expo": {
     "name": "FinTracker Pro",
-    "slug": "fintracker-pro",
+    "slug": "expense-tracker",
     "version": "1.0.0",
     "orientation": "portrait",
     "icon": "./assets/icon.png",
     "userInterfaceStyle": "light",
-    "newArchEnabled": true,
-    "splash": {
-      "resizeMode": "contain",
-      "backgroundColor": "#14b8a6"
-    },
     "ios": {
       "supportsTablet": true,
       "bundleIdentifier": "com.fintracker.pro"
@@ -19,7 +14,12 @@
       "adaptiveIcon": {
         "backgroundColor": "#14b8a6"
       },
-      "package": "com.fintracker.pro"
+      "package": "com.fintracker.pro",
+      "permissions": [
+        "android.permission.READ_EXTERNAL_STORAGE",
+        "android.permission.WRITE_EXTERNAL_STORAGE",
+        "android.permission.INTERNET"
+      ]
     },
     "web": {
       "bundler": "metro",
@@ -27,7 +27,14 @@
     },
     "plugins": [
       "expo-file-system",
-      "expo-notifications"
-    ]
+      "expo-notifications",
+      "expo-font"
+    ],
+    "extra": {
+      "eas": {
+        "projectId": "0d47b985-a72b-417b-ac70-f09f2b50dd08"
+      }
+    },
+    "owner": "sahxrahul"
   }
 }

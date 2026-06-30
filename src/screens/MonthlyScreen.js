@@ -1,4 +1,4 @@
-import React, { memo, useMemo } from "react";
+import React, { memo, useMemo, useDeferredValue } from "react";
 import {
   View,
   Text,
@@ -237,6 +237,11 @@ const MonthlyScreen = memo(function MonthlyScreen({ navigation }) {
 
   const daysInMonth = useMemo(() => getDaysInRange(monthStart, monthEnd), [monthStart, monthEnd]);
 
+  // Defer heavy chart computations so input stays responsive
+  const deferredCategoryData = useDeferredValue(categoryData);
+  const deferredSourceData = useDeferredValue(sourceData);
+  const deferredBarData = useDeferredValue(barData);
+
   // Precompute daily totals in a single pass (eliminates O(d×n) inline computation)
   const dailyTotals = useMemo(() => {
     const expenses = {};
@@ -428,14 +433,14 @@ const MonthlyScreen = memo(function MonthlyScreen({ navigation }) {
             </Text>
             <View className="items-center">
               <PieChart
-                data={sourceData}
+                data={deferredSourceData}
                 size={CHART_SIZE}
                 radius={PIE_RADIUS}
                 chartColorMap={sourceColors}
               />
             </View>
             <View className="mt-3">
-              {sourceData.map((item) => (
+              {deferredSourceData.map((item) => (
                 <View
                   key={item.label}
                   className="flex-row justify-between items-center py-1"
@@ -469,14 +474,14 @@ const MonthlyScreen = memo(function MonthlyScreen({ navigation }) {
             </Text>
             <View className="items-center">
               <PieChart
-                data={categoryData}
+                data={deferredCategoryData}
                 size={CHART_SIZE}
                 radius={PIE_RADIUS}
                 chartColorMap={categoryColors}
               />
             </View>
             <View className="mt-3">
-              {categoryData.map((item) => (
+              {deferredCategoryData.map((item) => (
                 <View
                   key={item.label}
                   className="flex-row justify-between items-center py-1"
@@ -509,7 +514,7 @@ const MonthlyScreen = memo(function MonthlyScreen({ navigation }) {
               Daily Spending Trend
             </Text>
             <View className="items-center">
-              <BarChart data={barData} height={150} />
+              <BarChart data={deferredBarData} height={150} />
             </View>
           </View>
 

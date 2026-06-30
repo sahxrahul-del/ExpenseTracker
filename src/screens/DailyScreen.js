@@ -177,6 +177,11 @@ const DailyScreen = memo(function DailyScreen() {
       <FlatList
         data={dayTransactions}
         keyExtractor={(item) => item.id}
+        getItemLayout={(data, index) => ({
+          length: 72,
+          offset: 72 * index,
+          index,
+        })}
         refreshControl={
           <RefreshControl refreshing={refreshing} onRefresh={onRefresh} />
         }

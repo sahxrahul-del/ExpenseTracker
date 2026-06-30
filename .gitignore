@@ -4,6 +4,7 @@ dist/
 *.jks
 *.keystore
 *.hbc
+/android
 android/.gradle/
 android/build/
 android/app/build/

@@ -1,4 +1,4 @@
-import React, { useState, useMemo, useRef, useEffect, memo, useCallback } from "react";
+import React, { useDeferredValue, useState, useMemo, useRef, useEffect, memo, useCallback } from "react";
 import {
   View,
   Text,
@@ -99,6 +99,8 @@ const EntryScreen = memo(function EntryScreen() {
   const isIncome = activeTab === "income";
   const categoryItems = isIncome ? INCOME_SOURCES : EXPENSE_CATEGORIES;
   const colorMap = isIncome ? sourceColors : categoryColors;
+
+  const deferredBatchTotal = useDeferredValue(batchTotal);
 
   const recentTransactions = useMemo(
     () =>
@@ -583,7 +585,7 @@ const EntryScreen = memo(function EntryScreen() {
                   color: isIncome ? colors.income : colors.expense,
                 }}
               >
-                {formatCurrency(batchTotal)}
+                {formatCurrency(deferredBatchTotal)}
               </Text>
             </View>
 
@@ -669,4 +671,6 @@ const EntryScreen = memo(function EntryScreen() {
       )}
     </View>
   );
-}
+});
+
+export default EntryScreen;

@@ -11,17 +11,29 @@ const KEYS = {
 const CHUNK_THRESHOLD = 500 * 1024;
 const CHUNK_SIZE = 400 * 1024;
 
+function simpleHash(str) {
+  let hash = 0;
+  for (let i = 0; i < str.length; i++) {
+    const char = str.charCodeAt(i);
+    hash = ((hash << 5) - hash) + char;
+    hash |= 0;
+  }
+  return hash.toString(36);
+}
+
 async function saveLargeData(key, data) {
   try {
     const str = JSON.stringify(data);
-    if (str.length < CHUNK_THRESHOLD) {
-      await AsyncStorage.setItem(key, str);
+    const checksum = simpleHash(str);
+    const payload = JSON.stringify({ data, checksum });
+    if (payload.length < CHUNK_THRESHOLD) {
+      await AsyncStorage.setItem(key, payload);
       return true;
     }
     const metaKey = key + "_meta";
     const chunks = [];
-    for (let i = 0; i < str.length; i += CHUNK_SIZE) {
-      chunks.push(str.slice(i, i + CHUNK_SIZE));
+    for (let i = 0; i < payload.length; i += CHUNK_SIZE) {
+      chunks.push(payload.slice(i, i + CHUNK_SIZE));
     }
     await AsyncStorage.setItem(metaKey, JSON.stringify({ count: chunks.length }));
     const pairs = chunks.map((chunk, i) => [key + "_c" + i, chunk]);
@@ -37,14 +49,28 @@ async function saveLargeData(key, data) {
 async function loadLargeData(key) {
   try {
     const raw = await AsyncStorage.getItem(key);
-    if (raw !== null) return JSON.parse(raw);
-    const metaRaw = await AsyncStorage.getItem(key + "_meta");
-    if (!metaRaw) return null;
-    const { count } = JSON.parse(metaRaw);
-    const chunkKeys = Array.from({ length: count }, (_, i) => key + "_c" + i);
-    const pairs = await AsyncStorage.multiGet(chunkKeys);
-    const str = pairs.map(([, val]) => val).join("");
-    return JSON.parse(str);
+    let payload;
+    if (raw !== null) {
+      payload = raw;
+    } else {
+      const metaRaw = await AsyncStorage.getItem(key + "_meta");
+      if (!metaRaw) return null;
+      const { count } = JSON.parse(metaRaw);
+      const chunkKeys = Array.from({ length: count }, (_, i) => key + "_c" + i);
+      const pairs = await AsyncStorage.multiGet(chunkKeys);
+      payload = pairs.map(([, val]) => val).join("");
+    }
+    const parsed = JSON.parse(payload);
+    if (parsed && typeof parsed === "object" && "checksum" in parsed) {
+      const expected = parsed.checksum;
+      const actual = simpleHash(JSON.stringify(parsed.data));
+      if (expected !== actual) {
+        console.error("Data integrity check failed for", key);
+        return null;
+      }
+      return parsed.data;
+    }
+    return parsed;
   } catch (error) {
     console.error("Error loading large data:", error);
     return null;
@@ -80,7 +106,9 @@ export async function loadBudgets() {
 
 export async function saveSettings(settings) {
   try {
-    await AsyncStorage.setItem(KEYS.SETTINGS, JSON.stringify(settings));
+    const str = JSON.stringify(settings);
+    const checksum = simpleHash(str);
+    await AsyncStorage.setItem(KEYS.SETTINGS, JSON.stringify({ data: settings, checksum }));
     return true;
   } catch (error) {
     console.error("Error saving settings:", error);
@@ -90,10 +118,19 @@ export async function saveSettings(settings) {
 
 export async function loadSettings() {
   try {
-    const data = await AsyncStorage.getItem(KEYS.SETTINGS);
-    return data
-      ? JSON.parse(data)
-      : { autoExport: false, exportFormat: "PDF", dailyReminder: false };
+    const raw = await AsyncStorage.getItem(KEYS.SETTINGS);
+    if (!raw) return { autoExport: false, exportFormat: "PDF", dailyReminder: false };
+    const parsed = JSON.parse(raw);
+    if (parsed && typeof parsed === "object" && "checksum" in parsed) {
+      const expected = parsed.checksum;
+      const actual = simpleHash(JSON.stringify(parsed.data));
+      if (expected !== actual) {
+        console.error("Data integrity check failed for settings");
+        return { autoExport: false, exportFormat: "PDF", dailyReminder: false };
+      }
+      return parsed.data;
+    }
+    return parsed;
   } catch (error) {
     console.error("Error loading settings:", error);
     return { autoExport: false, exportFormat: "PDF", dailyReminder: false };
@@ -102,7 +139,6 @@ export async function loadSettings() {
 
 export async function clearAllData() {
   try {
-    // Clean up both flat and chunked keys
     const allKeys = await AsyncStorage.getAllKeys();
     const dataKeys = allKeys.filter((k) => k.startsWith("@fintracker_"));
     await AsyncStorage.multiRemove(dataKeys);
@@ -120,7 +156,11 @@ export async function exportAllData() {
     const pairs = await AsyncStorage.multiGet(dataKeys);
     const allData = {};
     for (const [key, value] of pairs) {
-      allData[key] = value ? JSON.parse(value) : null;
+      try {
+        allData[key] = value ? JSON.parse(value) : null;
+      } catch {
+        allData[key] = value;
+      }
     }
     return allData;
   } catch (error) {
@@ -133,7 +173,7 @@ export async function importAllData(data) {
   try {
     const pairs = Object.entries(data).map(([key, value]) => [
       key,
-      JSON.stringify(value),
+      typeof value === "string" ? value : JSON.stringify(value),
     ]);
     await AsyncStorage.multiSet(pairs);
     return true;

@@ -1,0 +1,33 @@
+{
+  "expo": {
+    "name": "FinTracker Pro",
+    "slug": "fintracker-pro",
+    "version": "1.0.0",
+    "orientation": "portrait",
+    "icon": "./assets/icon.png",
+    "userInterfaceStyle": "light",
+    "newArchEnabled": true,
+    "splash": {
+      "resizeMode": "contain",
+      "backgroundColor": "#14b8a6"
+    },
+    "ios": {
+      "supportsTablet": true,
+      "bundleIdentifier": "com.fintracker.pro"
+    },
+    "android": {
+      "adaptiveIcon": {
+        "backgroundColor": "#14b8a6"
+      },
+      "package": "com.fintracker.pro"
+    },
+    "web": {
+      "bundler": "metro",
+      "favicon": "./assets/favicon.png"
+    },
+    "plugins": [
+      "expo-file-system",
+      "expo-notifications"
+    ]
+  }
+}

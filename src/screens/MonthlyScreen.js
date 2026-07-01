@@ -11,7 +11,7 @@ import { Ionicons } from "@expo/vector-icons";
 import { useData, useUI } from "../context/AppContext";
 import SummaryCard from "../components/SummaryCard";
 import { colors, categoryColors, sourceColors } from "../constants/colors";
-const { chartColors: fallbackChartColors } = colors;
+
 import {
   formatCurrency,
   formatMonthYear,
@@ -87,7 +87,7 @@ function PieChart({ data, size, radius, colors: chartColorMap }) {
 
     return {
       path: pathData,
-      color: chartColorMap?.[item.label] || (fallbackChartColors ? fallbackChartColors[index % fallbackChartColors.length] : "#6b7280"),
+      color: chartColorMap?.[item.label] || colors.textLight,
       label: item.label,
       percent,
       lx,
@@ -237,11 +237,6 @@ const MonthlyScreen = memo(function MonthlyScreen({ navigation }) {
 
   const daysInMonth = useMemo(() => getDaysInRange(monthStart, monthEnd), [monthStart, monthEnd]);
 
-  // Defer heavy chart computations so input stays responsive
-  const deferredCategoryData = useDeferredValue(categoryData);
-  const deferredSourceData = useDeferredValue(sourceData);
-  const deferredBarData = useDeferredValue(barData);
-
   // Precompute daily totals in a single pass (eliminates O(d×n) inline computation)
   const dailyTotals = useMemo(() => {
     const expenses = {};
@@ -271,6 +266,11 @@ const MonthlyScreen = memo(function MonthlyScreen({ navigation }) {
       })),
     [daysInMonth, dailyTotals]
   );
+
+  // Defer heavy chart computations so input stays responsive
+  const deferredCategoryData = useDeferredValue(categoryData);
+  const deferredSourceData = useDeferredValue(sourceData);
+  const deferredBarData = useDeferredValue(barData);
 
   // Precompute budget spending in a single pass
   const budgetSpending = useMemo(() => {

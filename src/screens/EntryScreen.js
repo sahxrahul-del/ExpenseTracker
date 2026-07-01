@@ -13,7 +13,7 @@ import CategorySelector from "../components/CategorySelector";
 import { EXPENSE_CATEGORIES } from "../constants/categories";
 import { INCOME_SOURCES } from "../constants/incomeSource";
 import { colors, categoryColors, sourceColors } from "../constants/colors";
-import { todayISO, formatCurrency, formatDate } from "../utils/dateUtils";
+import { todayISO, formatCurrency, formatDate, isValidDate } from "../utils/dateUtils";
 
 const QUICK_AMOUNTS_INCOME = [1000, 5000, 10000, 25000, 50000];
 const QUICK_AMOUNTS_EXPENSE = [100, 200, 500, 1000, 2000];
@@ -100,18 +100,6 @@ const EntryScreen = memo(function EntryScreen() {
   const categoryItems = isIncome ? INCOME_SOURCES : EXPENSE_CATEGORIES;
   const colorMap = isIncome ? sourceColors : categoryColors;
 
-  const deferredBatchTotal = useDeferredValue(batchTotal);
-
-  const recentTransactions = useMemo(
-    () =>
-      [...transactions]
-        .sort((a, b) => b.timestamp - a.timestamp)
-        .slice(0, 5),
-    [transactions]
-  );
-
-  const quickAmounts = isIncome ? QUICK_AMOUNTS_INCOME : QUICK_AMOUNTS_EXPENSE;
-
   const batchTotal = useMemo(() => {
     return Object.values(batchAmounts).reduce((sum, val) => {
       const num = Number(val);
@@ -125,6 +113,18 @@ const EntryScreen = memo(function EntryScreen() {
       return !isNaN(num) && num > 0;
     }).length;
   }, [batchAmounts]);
+
+  const deferredBatchTotal = useDeferredValue(batchTotal);
+
+  const recentTransactions = useMemo(
+    () =>
+      [...transactions]
+        .sort((a, b) => b.timestamp - a.timestamp)
+        .slice(0, 5),
+    [transactions]
+  );
+
+  const quickAmounts = isIncome ? QUICK_AMOUNTS_INCOME : QUICK_AMOUNTS_EXPENSE;
 
   function resetQuickForm() {
     setAmount("");
@@ -152,8 +152,8 @@ const EntryScreen = memo(function EntryScreen() {
       );
       return;
     }
-    if (!/^\d{4}-\d{2}-\d{2}$/.test(date)) {
-      Alert.alert("Invalid Date", "Enter date in YYYY-MM-DD format.");
+    if (!isValidDate(date)) {
+      Alert.alert("Invalid Date", "Enter a valid date in YYYY-MM-DD format.");
       return;
     }
 
@@ -180,8 +180,8 @@ const EntryScreen = memo(function EntryScreen() {
   }
 
   function handleBatchSubmit() {
-    if (!/^\d{4}-\d{2}-\d{2}$/.test(date)) {
-      Alert.alert("Invalid Date", "Enter date in YYYY-MM-DD format.");
+    if (!isValidDate(date)) {
+      Alert.alert("Invalid Date", "Enter a valid date in YYYY-MM-DD format.");
       return;
     }
     const txs = [];

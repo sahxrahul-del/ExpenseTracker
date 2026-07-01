@@ -33,6 +33,11 @@ import {
   getTransactionsInRange,
 } from "../utils/calculationUtils";
 
+function escapeXml(str) {
+  if (typeof str !== "string") return String(str ?? "");
+  return str.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;").replace(/'/g, "&apos;");
+}
+
 const { StorageAccessFramework } = FileSystem;
 const EXPORTS_KEY = "@fintracker_exports";
 const EXPORT_DIR_KEY = "@fintracker_export_dir";
@@ -105,7 +110,9 @@ const ExportScreen = memo(function ExportScreen() {
     try {
       const data = await AsyncStorage.getItem(EXPORTS_KEY);
       if (data) setExportRecords(JSON.parse(data));
-    } catch {}
+    } catch (e) {
+      console.warn("Failed to load export records:", e);
+    }
   }
 
   const exportRecordsRef = useRef(exportRecords);
@@ -127,7 +134,8 @@ const ExportScreen = memo(function ExportScreen() {
       try {
         await StorageAccessFramework.readDirectoryAsync(dirUri);
         return dirUri;
-      } catch {
+      } catch (e) {
+        console.warn("Stored export dir invalid, clearing:", e);
         await AsyncStorage.removeItem(EXPORT_DIR_KEY);
       }
     }
@@ -370,13 +378,13 @@ const ExportScreen = memo(function ExportScreen() {
         .map(
           (tx) => `
     <transaction>
-      <id>${tx.id}</id>
-      <type>${tx.type}</type>
-      <amount>${tx.amount}</amount>
-      <${tx.type === "income" ? "source" : "category"}>${tx.type === "income" ? tx.source : tx.category}</${tx.type === "income" ? "source" : "category"}>
+      <id>${escapeXml(tx.id)}</id>
+      <type>${escapeXml(tx.type)}</type>
+      <amount>${escapeXml(tx.amount)}</amount>
+      <${tx.type === "income" ? "source" : "category"}>${escapeXml(tx.type === "income" ? tx.source : tx.category)}</${tx.type === "income" ? "source" : "category"}>
       <description><![CDATA[${tx.description || ""}]]></description>
-      <date>${tx.date}</date>
-      <account>${tx.account || ""}</account>
+      <date>${escapeXml(tx.date)}</date>
+      <account>${escapeXml(tx.account || "")}</account>
       <notes><![CDATA[${tx.notes || ""}]]></notes>
     </transaction>`
         )
@@ -386,11 +394,11 @@ const ExportScreen = memo(function ExportScreen() {
         .map(
           (acc) => `
     <account>
-      <id>${acc.id}</id>
-      <name>${acc.name}</name>
-      <type>${acc.type || "Custom"}</type>
-      <balance>${acc.balance || 0}</balance>
-      <isDefault>${acc.isDefault || false}</isDefault>
+      <id>${escapeXml(acc.id)}</id>
+      <name>${escapeXml(acc.name)}</name>
+      <type>${escapeXml(acc.type || "Custom")}</type>
+      <balance>${escapeXml(acc.balance || 0)}</balance>
+      <isDefault>${escapeXml(acc.isDefault || false)}</isDefault>
     </account>`
         )
         .join("");
@@ -400,12 +408,12 @@ const ExportScreen = memo(function ExportScreen() {
         .map(
           (b) => `
     <budget>
-      <id>${b.id}</id>
-      <category>${b.category}</category>
-      <amount>${b.amount}</amount>
-      <monthYear>${b.monthYear}</monthYear>
-      <alertThreshold>${b.alertThreshold || 80}</alertThreshold>
-      <rolloverage>${b.rolloverage || false}</rolloverage>
+      <id>${escapeXml(b.id)}</id>
+      <category>${escapeXml(b.category)}</category>
+      <amount>${escapeXml(b.amount)}</amount>
+      <monthYear>${escapeXml(b.monthYear)}</monthYear>
+      <alertThreshold>${escapeXml(b.alertThreshold || 80)}</alertThreshold>
+      <rolloverage>${escapeXml(b.rolloverage || false)}</rolloverage>
     </budget>`
         )
         .join("");
@@ -513,15 +521,18 @@ const ExportScreen = memo(function ExportScreen() {
           });
           return;
         }
-      } catch {}
+        } catch (innerError) {
+          console.warn("Reshare retry failed:", innerError);
+        }
       Alert.alert("Error", "Failed to share: " + error.message);
     }
   }
 
   async function handleResetExportDir() {
     setResettingDir(true);
-    await AsyncStorage.removeItem(EXPORT_DIR_KEY);
-    Alert.alert("Done", "Export folder preference cleared. You'll be asked to choose a folder next time.");
+    await AsyncStorage.multiRemove([EXPORT_DIR_KEY, EXPORTS_KEY]);
+    setExportRecords([]);
+    Alert.alert("Done", "Export folder preference and export records cleared.");
     setResettingDir(false);
   }
 

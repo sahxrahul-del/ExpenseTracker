@@ -125,8 +125,8 @@ td { padding: 6px 8px; border-bottom: 1px solid #e5e7eb; font-size: 13px; }
         encoding: FileSystem.EncodingType.Base64,
       });
       saved = true;
-    } catch {
-      // SAF write failed, fall back below
+    } catch (e) {
+      console.debug("SAF write failed, falling back to document dir:", e);
     }
   }
   if (!saved) {

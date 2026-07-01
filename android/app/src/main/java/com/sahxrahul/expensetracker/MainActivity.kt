@@ -1,4 +1,4 @@
-package com.fintracker.pro
+package com.sahxrahul.expensetracker
 
 import android.os.Build
 import android.os.Bundle

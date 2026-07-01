@@ -95,3 +95,10 @@ export function parseDateToISO(date) {
   if (typeof date === "string") return date;
   return format(date, "yyyy-MM-dd");
 }
+
+export function isValidDate(dateStr) {
+  if (typeof dateStr !== "string") return false;
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(dateStr)) return false;
+  const d = new Date(dateStr + "T00:00:00");
+  return d instanceof Date && !isNaN(d.getTime()) && dateStr === d.toISOString().slice(0, 10);
+}

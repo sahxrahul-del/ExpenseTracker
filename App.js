@@ -8,6 +8,7 @@ import { createBottomTabNavigator } from "@react-navigation/bottom-tabs";
 import { createNativeStackNavigator } from "@react-navigation/native-stack";
 import { Ionicons } from "@expo/vector-icons";
 import { TouchableOpacity, View, Platform } from "react-native";
+import { SafeAreaProvider, useSafeAreaInsets } from "react-native-safe-area-context";
 
 import { AppProvider } from "./src/context/AppContext";
 import ErrorBoundary from "./src/components/ErrorBoundary";
@@ -34,6 +35,7 @@ const Tab = createBottomTabNavigator();
 const Stack = createNativeStackNavigator();
 
 function TabNavigator() {
+  const insets = useSafeAreaInsets();
   return (
     <Tab.Navigator
       screenOptions={({ route }) => ({
@@ -58,9 +60,9 @@ function TabNavigator() {
           backgroundColor: "#fff",
           borderTopWidth: 1,
           borderTopColor: colors.borderGray,
-          paddingBottom: 4,
+          paddingBottom: 4 + insets.bottom,
           paddingTop: 4,
-          height: 60,
+          height: 60 + insets.bottom,
         },
         tabBarLabelStyle: {
           fontSize: 11,
@@ -101,6 +103,7 @@ function TabNavigator() {
 export default function App() {
   return (
     <ErrorBoundary>
+    <SafeAreaProvider>
     <AppProvider>
       <NavigationContainer>
         <Stack.Navigator>
@@ -140,6 +143,7 @@ export default function App() {
         <StatusBar style="dark" />
       </NavigationContainer>
     </AppProvider>
+    </SafeAreaProvider>
     </ErrorBoundary>
   );
 }

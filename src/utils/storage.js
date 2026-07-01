@@ -158,7 +158,8 @@ export async function exportAllData() {
     for (const [key, value] of pairs) {
       try {
         allData[key] = value ? JSON.parse(value) : null;
-      } catch {
+      } catch (e) {
+        console.debug("Failed to parse stored value for key", key, e);
         allData[key] = value;
       }
     }

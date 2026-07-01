@@ -1,4 +1,4 @@
-package com.fintracker.pro
+package com.sahxrahul.expensetracker
 
 import android.app.Application
 import android.content.res.Configuration

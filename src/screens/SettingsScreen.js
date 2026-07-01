@@ -30,51 +30,70 @@ const SettingsScreen = memo(function SettingsScreen() {
   const [newBudgetCategory, setNewBudgetCategory] = useState("");
   const [newBudgetAmount, setNewBudgetAmount] = useState("");
   const notificationListenerRef = useRef(null);
+  const mountedRef = useRef(true);
 
   useEffect(() => {
+    mountedRef.current = true;
     return () => {
+      mountedRef.current = false;
       if (notificationListenerRef.current) {
-        Notifications.removeNotificationSubscription(notificationListenerRef.current);
+        try {
+          Notifications.removeNotificationSubscription(notificationListenerRef.current);
+        } catch {}
       }
     };
   }, []);
 
   async function scheduleDailyReminder() {
-    const { status } = await Notifications.requestPermissionsAsync();
-    if (status !== "granted") {
-      Alert.alert(
-        "Permission Required",
-        "Enable notifications in Settings to receive daily reminders."
-      );
-      updateSettings({ dailyReminder: false });
-      return;
+    try {
+      const { status } = await Notifications.requestPermissionsAsync();
+      if (!mountedRef.current) return;
+      if (status !== "granted") {
+        Alert.alert(
+          "Permission Required",
+          "Enable notifications in Settings to receive daily reminders."
+        );
+        updateSettings({ dailyReminder: false });
+        return;
+      }
+      await Notifications.cancelAllScheduledNotificationsAsync();
+      if (!mountedRef.current) return;
+      await Notifications.scheduleNotificationAsync({
+        content: {
+          title: "FinTracker Pro",
+          body: "📝 Don't forget to log today's expenses!",
+        },
+        trigger: {
+          type: Notifications.SchedulableTriggerInputTypes.DAILY,
+          hour: 20,
+          minute: 0,
+        },
+      });
+      if (!mountedRef.current) return;
+      if (notificationListenerRef.current) {
+        try {
+          Notifications.removeNotificationSubscription(notificationListenerRef.current);
+        } catch {}
+      }
+      notificationListenerRef.current = Notifications.addNotificationResponseReceivedListener((response) => {
+        // Could navigate to entry screen here
+      });
+    } catch (error) {
+      console.warn("Daily reminder error:", error);
     }
-    await Notifications.cancelAllScheduledNotificationsAsync();
-    const id = await Notifications.scheduleNotificationAsync({
-      content: {
-        title: "FinTracker Pro",
-        body: "📝 Don't forget to log today's expenses!",
-      },
-      trigger: {
-        type: Notifications.SchedulableTriggerInputTypes.DAILY,
-        hour: 20,
-        minute: 0,
-      },
-    });
-    if (notificationListenerRef.current) {
-      Notifications.removeNotificationSubscription(notificationListenerRef.current);
-    }
-    notificationListenerRef.current = Notifications.addNotificationResponseReceivedListener((response) => {
-      // Could navigate to entry screen here
-    });
-    return id;
   }
 
   async function cancelDailyReminder() {
-    await Notifications.cancelAllScheduledNotificationsAsync();
-    if (notificationListenerRef.current) {
-      Notifications.removeNotificationSubscription(notificationListenerRef.current);
-      notificationListenerRef.current = null;
+    try {
+      await Notifications.cancelAllScheduledNotificationsAsync();
+      if (notificationListenerRef.current) {
+        try {
+          Notifications.removeNotificationSubscription(notificationListenerRef.current);
+        } catch {}
+        notificationListenerRef.current = null;
+      }
+    } catch (error) {
+      console.warn("Cancel reminder error:", error);
     }
   }
 

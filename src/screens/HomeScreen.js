@@ -144,9 +144,9 @@ const HomeScreen = memo(function HomeScreen({ navigation }) {
       >
         <View className="px-4 pt-4 pb-2">
           <Text className="text-2xl font-bold text-text-dark">
-            FinTracker Pro
+            Welcome Back!
           </Text>
-          <Text className="text-text-light text-sm mt-1">
+          <Text className="text-xl font-italic text-text-dark">
             {formatDate(today)}
           </Text>
         </View>
